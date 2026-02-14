@@ -1,9 +1,17 @@
 import os
 import pandas as pd
 
-def load_dataset(data_path="data"):
+def load_dataset(data_path=None):
     texts = []
     labels = []
+
+    # 🔥 Auto-detect project root (works in Colab + local)
+    if data_path is None:
+        current_dir = os.path.dirname(os.path.abspath(__file__))   # src/
+        project_root = os.path.dirname(current_dir)                # NLU_Q4/
+        data_path = os.path.join(project_root, "data")             # NLU_Q4/data
+
+    print("Loading dataset from:", data_path)
 
     for label in ["sport", "politics"]:
         folder = os.path.join(data_path, label)
@@ -20,4 +28,5 @@ def load_dataset(data_path="data"):
         "label": labels
     })
 
+    print("Dataset size:", df.shape)
     return df
