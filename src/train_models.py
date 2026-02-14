@@ -7,14 +7,26 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import LinearSVC
 from sklearn.metrics import accuracy_score
-import pandas as pd
 
-# Load data
+import pandas as pd
+import numpy as np
+import os
+
+print("Loading dataset...")
 df = load_dataset()
+
+print("Preprocessing text...")
 df["clean"] = df["text"].apply(clean_text)
 
-X_train, X_test, y_train, y_test = train_test_split(
-    df["clean"], df["label"], test_size=0.2, random_state=42)
+docs = df["clean"].tolist()   # list of tokenized docs
+labels = df["label"].values
+
+train_idx, test_idx = train_test_split(
+    np.arange(len(docs)), test_size=0.2, random_state=42, stratify=labels
+)
+
+y_train = labels[train_idx]
+y_test  = labels[test_idx]
 
 models = {
     "Naive Bayes": MultinomialNB(),
@@ -22,27 +34,57 @@ models = {
     "SVM": LinearSVC()
 }
 
-features = {
-    "Bag of Words": bow_features(),
-    "N-grams": ngram_features(),
-    "TF-IDF": tfidf_features()
-}
-
 results = []
 
-for feature_name, vectorizer in features.items():
+print("\nRunning Bag of Words...")
+vocab, word2idx = build_vocabulary(docs, ngram_range=(1,1))
+X = bow_matrix(docs, word2idx, ngram_range=(1,1))
 
-    X_train_vec = vectorizer.fit_transform(X_train)
-    X_test_vec = vectorizer.transform(X_test)
+X_train = X[train_idx]
+X_test  = X[test_idx]
 
-    for model_name, model in models.items():
-        model.fit(X_train_vec, y_train)
-        preds = model.predict(X_test_vec)
-        acc = accuracy_score(y_test, preds)
+for model_name, model in models.items():
+    model.fit(X_train, y_train)
+    preds = model.predict(X_test)
+    acc = accuracy_score(y_test, preds)
+    results.append(["Bag of Words", model_name, acc])
+    print(model_name, ":", acc)
 
-        results.append([feature_name, model_name, acc])
+print("\nRunning N-grams...")
+vocab, word2idx = build_vocabulary(docs, ngram_range=(1,2))
+X = bow_matrix(docs, word2idx, ngram_range=(1,2))
 
+X_train = X[train_idx]
+X_test  = X[test_idx]
+
+for model_name, model in models.items():
+    model.fit(X_train, y_train)
+    preds = model.predict(X_test)
+    acc = accuracy_score(y_test, preds)
+    results.append(["N-grams", model_name, acc])
+    print(model_name, ":", acc)
+
+print("\nRunning TF-IDF...")
+vocab, word2idx = build_vocabulary(docs, ngram_range=(1,2))
+X_bow = bow_matrix(docs, word2idx, ngram_range=(1,2))
+X = tfidf_matrix(X_bow)
+
+X_train = X[train_idx]
+X_test  = X[test_idx]
+
+for model_name, model in models.items():
+    model.fit(X_train, y_train)
+    preds = model.predict(X_test)
+    acc = accuracy_score(y_test, preds)
+    results.append(["TF-IDF", model_name, acc])
+    print(model_name, ":", acc)
+
+#result
 results_df = pd.DataFrame(results, columns=["Feature","Model","Accuracy"])
-print(results_df)
 
+os.makedirs("results", exist_ok=True)
 results_df.to_csv("results/model_comparison.csv", index=False)
+
+print("\nFinal Results:")
+print(results_df)
+print("\nSaved to results/model_comparison.csv")
