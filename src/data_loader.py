@@ -5,11 +5,10 @@ def load_dataset(data_path=None):
     texts = []
     labels = []
 
-    # 🔥 Auto-detect project root (works in Colab + local)
     if data_path is None:
-        current_dir = os.path.dirname(os.path.abspath(__file__))   # src/
-        project_root = os.path.dirname(current_dir)                # NLU_Q4/
-        data_path = os.path.join(project_root, "data")             # NLU_Q4/data
+        current_dir = os.path.dirname(os.path.abspath(__file__)) 
+        project_root = os.path.dirname(current_dir)               
+        data_path = os.path.join(project_root, "data")             
 
     print("Loading dataset from:", data_path)
 
